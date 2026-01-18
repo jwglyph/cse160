@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ASG1 - Painting</title>
+</head>
+
+<body onload="main()">
+
+  <div style="display:flex; gap:20px; align-items:flex-start;">
+    <canvas id="webgl" width="400" height="400">
+      Please use a browser that supports "canvas"
+    </canvas>
+
+    <img
+      id="refImg"
+      src="reference.jpg"
+      style="display:none; width:400px; height:400px; border:1px solid #ccc;"
+    >
+  </div>
+
+  <div style="margin-top:10px;">
+    <button id="clear">Clear Canvas</button>
+    <button id="drawPic">Draw Picture</button>
+    <button id="refPic">Reference Sketch</button>
+  </div>
+
+  <div style="margin-top: 10px;">
+    <div><b>Drawing Mode:</b></div>
+    <button id="pointBtn">Squares</button>
+    <button id="triBtn">Triangles</button>
+    <button id="circBtn">Circles</button>
+  </div>
+
+  <div style="margin-top: 10px;">
+    <div><b>Shape Color:</b></div>
+    Red <input type="range" id="red"   min="0" max="100" value="100">
+    Green <input type="range" id="green" min="0" max="100" value="0">
+    Blue <input type="range" id="blue"  min="0" max="100" value="0">
+  </div>
+
+  <div style="margin-top: 10px;">
+    <span><b>Shape Size:</b></span>
+    <input type="range" id="size" min="1" max="40" value="10">
+    
+    <span style="margin-left: 20px;"><b>(Circles) Segment Count:</b></span>
+    <input type="range" id="segments" min="3" max="60" value="10">
+  </div>
+
+  <script src="lib/webgl-utils.js"></script>
+  <script src="lib/webgl-debug.js"></script>
+  <script src="lib/cuon-utils.js"></script>
+  
+  <script src="Point.js"></script>
+  <script src="Triangle.js"></script>
+  <script src="Circle.js"></script>
+
+  <script src="asg1.js"></script>
+</body>
+</html>
