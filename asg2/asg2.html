@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ASG2 - Blocky Goat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .controls {
+      margin-top: 10px;
+    }
+    .control-group {
+      margin: 10px 0;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 5px;
+    }
+    .control-group b {
+      display: block;
+      margin-bottom: 5px;
+    }
+    label {
+      display: inline-block;
+      width: 150px;
+    }
+    input[type="range"] {
+      width: 200px;
+    }
+    button {
+      padding: 8px 16px;
+      margin: 5px;
+      cursor: pointer;
+    }
+    #performance {
+      font-family: monospace;
+      background: #222;
+      color: #0f0;
+      padding: 5px 10px;
+      display: inline-block;
+    }
+  </style>
+</head>
+
+<body onload="main()">
+  <h2>Blocky 3D Goat 🐐</h2>
+  
+  <canvas id="webgl" width="400" height="400" style="border: 1px solid #ccc;">
+    Please use a browser that supports "canvas"
+  </canvas>
+
+  <div class="controls">
+    <!-- Performance Indicator -->
+    <div class="control-group">
+      <b>Performance:</b>
+      <span id="performance">-- ms | -- fps</span>
+    </div>
+
+    <!-- Animation Controls -->
+    <div class="control-group">
+      <b>Animation:</b>
+      <button id="animOnBtn">Animation ON</button>
+      <button id="animOffBtn">Animation OFF</button>
+    </div>
+
+    <!-- Global Rotation -->
+    <div class="control-group">
+      <b>Camera / Global Rotation:</b><br>
+      <label>Angle X:</label>
+      <input type="range" id="angleX" min="-180" max="180" value="0">
+      <span id="angleXVal">0</span>°<br>
+      <label>Angle Y:</label>
+      <input type="range" id="angleY" min="-180" max="180" value="0">
+      <span id="angleYVal">0</span>°
+    </div>
+
+    <!-- Joint Angle Controls -->
+    <div class="control-group">
+      <b>Joint Controls:</b> <small>(overrides animation for that joint)</small><br>
+      <label>Front Left Leg:</label>
+      <input type="range" id="frontLeftLeg" min="-45" max="45" value="0">
+      <span id="frontLeftLegVal">0</span>°<br>
+      
+      <label>Front Left Foot:</label>
+      <input type="range" id="frontLeftFoot" min="-45" max="45" value="0">
+      <span id="frontLeftFootVal">0</span>°<br>
+      
+      <label>Tail:</label>
+      <input type="range" id="tailAngle" min="-45" max="45" value="0">
+      <span id="tailAngleVal">0</span>°<br>
+      
+      <button id="resetJointsBtn" style="margin-top: 8px;">Reset to Animation</button>
+    </div>
+  </div>
+
+  <!-- Libraries -->
+  <script src="lib/webgl-utils.js"></script>
+  <script src="lib/webgl-debug.js"></script>
+  <script src="lib/cuon-utils.js"></script>
+  <script src="lib/cuon-matrix-cse160.js"></script>
+  
+  <!-- Shape Classes (order matters - Triangle.js has drawTriangle3D used by Cube.js) -->
+  <script src="Triangle.js"></script>
+  <script src="Cube.js"></script>
+  <script src="Cone.js"></script>
+
+  <!-- Main Code -->
+  <script src="asg2.js"></script>
+</body>
+</html>
