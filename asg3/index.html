@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSE160 - Assignment 3: Virtual World</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a1a2e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: monospace;
+      color: #eee;
+      overflow: hidden;
+    }
+    #container {
+      position: relative;
+    }
+    #webgl {
+      display: block;
+      cursor: crosshair;
+      border: 2px solid #333;
+    }
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <canvas id="webgl" width="800" height="600"></canvas>
+    <canvas id="overlay" width="800" height="600"></canvas>
+  </div>
+
+  <script src="js/cuon-matrix.js"></script>
+  <script src="js/Camera.js"></script>
+  <script src="js/World.js"></script>
+  <script>
+    window.onload = main;
+  </script>
+</body>
+</html>
