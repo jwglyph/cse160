@@ -1,0 +1,206 @@
+import { Vector3, Matrix4 } from "../../lib/cuon-matrix-cse160";
+import { createProgram } from "../../lib/cuon-utils";
+
+export default class Plane {
+  constructor(widthSegments = 1, heightSegments = 1) {
+    // buffers
+    this.vertexBuffer = null;
+    this.indexBuffer = null;
+    this.uvBuffer = null;
+    this.normalBuffer = null;
+
+    // shader programs
+    this.vertexShader = null;
+    this.fragmentShader = null;
+    this.program = null;
+
+    // data arrays
+    this.vertices = null;
+    this.indices = null;
+    this.uvs = null;
+    this.normals = null;
+
+    // transformations
+    this.position = new Vector3([0, 0, 0]);
+    this.rotation = new Vector3([0, 0, 0]);
+    this.scale = new Vector3([1, 1, 1]);
+    this.modelMatrix = new Matrix4();
+    this.normalMatrix = new Matrix4();
+
+    this.generatePlane(widthSegments, heightSegments);
+  }
+
+  generatePlane(widthSegments, heightSegments) {
+    const seg_width = 1.0 / widthSegments;
+    const seg_height = 1.0 / widthSegments;
+
+    const vertices = [];
+    const indices = [];
+    const uvs = [];
+    const normals = [];
+
+    for (let i = 0; i < heightSegments + 1; i++) {
+      const y = i * seg_height - 0.5;
+
+      for (let j = 0; j < widthSegments + 1; j++) {
+        let x = j * seg_width - 0.5;
+
+        vertices.push(x, -y, 0);
+        normals.push(0, 0, 1);
+
+        uvs.push(j / widthSegments);
+        uvs.push(1 - i / heightSegments);
+      }
+
+      for (let i = 0; i < heightSegments; i++) {
+        for (let j = 0; j < widthSegments; j++) {
+          let a = j + (widthSegments + 1) * i;
+          let b = j + (widthSegments + 1) * (i + 1);
+          let c = j + 1 + (widthSegments + 1) * (i + 1);
+          let d = j + 1 + (widthSegments + 1) * i;
+
+          indices.push(a, b, d);
+          indices.push(b, c, d);
+        }
+      }
+
+      this.vertices = new Float32Array(vertices);
+      this.indices = new Uint16Array(indices);
+      this.uvs = new Float32Array(uvs);
+      this.normals = new Float32Array(normals);
+    }
+  }
+
+  setProgram(gl) {
+    this.vertexShader = `
+      precision mediump float;
+      attribute vec3 position;
+      attribute vec2 uv;
+      attribute vec3 normal;
+
+      uniform mat4 modelMatrix;
+      uniform mat4 normalMatrix;
+      uniform mat4 viewMatrix;
+      uniform mat4 projectionMatrix;
+      uniform float uTime;
+
+      varying vec3 vNormal;
+      varying float vWaveHeight;
+
+      void main() {
+        vec4 transformedPosition = modelMatrix * vec4(position, 1.0);
+
+        float waveZ = transformedPosition.z + uTime * 0.5;
+        float waveX = transformedPosition.x - uTime * 0.2;
+
+        // layered waves for smooth, realistic motion
+        float wave1 = sin(waveZ) + cos(waveX);
+        float wave2 = 0.4 * sin(waveZ * 2.0 + uTime * 0.3) + 0.4 * cos(waveX * 1.5 - uTime * 0.15);
+        float wave3 = 0.2 * sin(waveZ * 0.5 + waveX * 0.7 + uTime * 0.1);
+
+        float waveIntensity = wave1 + wave2 + wave3;
+
+        transformedPosition.y += waveIntensity;
+
+        gl_Position = projectionMatrix * viewMatrix * transformedPosition;
+        vNormal = (normalMatrix * vec4(normal, 1.0)).xyz;
+        vWaveHeight = (waveIntensity + 3.0) / 6.0;
+      }
+    `;
+
+    this.fragmentShader = `
+      precision mediump float;
+      varying vec3 vNormal;
+      varying float vWaveHeight;
+
+      void main() {
+        vec3 deepBlue = vec3(0.05, 0.15, 0.4);
+        vec3 midBlue = vec3(0.15, 0.35, 0.75);
+        vec3 foam = vec3(0.8, 0.85, 0.95);
+
+        vec3 color = mix(deepBlue, midBlue, smoothstep(0.0, 0.5, vWaveHeight));
+        color = mix(color, foam, smoothstep(0.55, 0.85, vWaveHeight));
+
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `;
+
+    this.program = createProgram(gl, this.vertexShader, this.fragmentShader);
+    if (!this.program) console.error("Could not compile shaders for Plane");
+  }
+
+  calculateMatrix() {
+    let [x, y, z] = this.position.elements;
+    let [rx, ry, rz] = this.rotation.elements;
+    let [sx, sy, sz] = this.scale.elements;
+
+    this.modelMatrix
+      .setTranslate(x, y, z)
+      .rotate(rx, 1, 0, 0)
+      .rotate(ry, 0, 1, 0)
+      .rotate(rz, 0, 0, 1)
+      .scale(sx, sy, sz);
+
+    this.normalMatrix.set(this.modelMatrix).invert().transpose();
+  }
+
+  render(gl, camera) {
+    // compile the shader if not already done so
+    if (this.program === null) {
+      this.setProgram(gl);
+    }
+
+    // tell webGL to use this program
+    gl.useProgram(this.program);
+
+    if (this.vertexBuffer === null) this.vertexBuffer = gl.createBuffer();
+    if (this.indexBuffer === null) this.indexBuffer = gl.createBuffer();
+    if (this.uvBuffer === null) this.uvBuffer = gl.createBuffer();
+    if (this.normalBuffer === null) this.normalBuffer = gl.createBuffer();
+
+    this.calculateMatrix();
+    camera.calculateViewProjection();
+
+    const uTime = gl.getUniformLocation(this.program, "uTime");
+    const position = gl.getAttribLocation(this.program, "position");
+    const uv = gl.getAttribLocation(this.program, "uv");
+    const normal = gl.getAttribLocation(this.program, "normal");
+    const modelMatrix = gl.getUniformLocation(this.program, "modelMatrix");
+    const normalMatrix = gl.getUniformLocation(this.program, "normalMatrix");
+    const viewMatrix = gl.getUniformLocation(this.program, "viewMatrix");
+    const projectionMatrix = gl.getUniformLocation(
+      this.program,
+      "projectionMatrix"
+    );
+
+    gl.uniform1f(uTime, performance.now() / 1000);
+    gl.uniformMatrix4fv(modelMatrix, false, this.modelMatrix.elements);
+    gl.uniformMatrix4fv(normalMatrix, false, this.normalMatrix.elements);
+    gl.uniformMatrix4fv(viewMatrix, false, camera.viewMatrix.elements);
+    gl.uniformMatrix4fv(
+      projectionMatrix,
+      false,
+      camera.projectionMatrix.elements
+    );
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.DYNAMIC_DRAW);
+    gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(position);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.uvs, gl.DYNAMIC_DRAW);
+    gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(uv);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.normals, gl.DYNAMIC_DRAW);
+    gl.vertexAttribPointer(normal, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(normal);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.indices, gl.DYNAMIC_DRAW);
+
+    gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
+  }
+}
